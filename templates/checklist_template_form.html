@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{% if template %}Modifier{% else %}Nouvelle{% endif %} Check List{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('machines') }}">Machines</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('machine_detail', machine_id=machine.id) }}">{{ machine.name }}</a></li>
+    <li class="breadcrumb-item active">{% if template %}Modifier{% else %}Nouvelle{% endif %} Check List</li>
+  </ol>
+</nav>
+
+<h2>{% if template %}Modifier{% else %}Nouvelle{% endif %} Check List</h2>
+
+<form method="post">
+  <div class="mb-3">
+    <label class="form-label">Nom de la check list <span class="text-danger">*</span></label>
+    <input type="text" class="form-control" name="name" value="{{ template.name if template else '' }}" required />
+  </div>
+  
+  <div class="mb-3">
+    <label class="form-label">Éléments de la check list</label>
+    <div id="items-container">
+      {% if template and template.items %}
+        {% for item in template.items %}
+        <div class="input-group mb-2 item-row">
+          <input type="text" class="form-control" name="item_label" value="{{ item.label }}" placeholder="Libellé de l'élément" />
+          <button type="button" class="btn btn-outline-danger remove-item">🗑️</button>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="input-group mb-2 item-row">
+          <input type="text" class="form-control" name="item_label" placeholder="Libellé de l'élément" />
+          <button type="button" class="btn btn-outline-danger remove-item">🗑️</button>
+        </div>
+      {% endif %}
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="add-item">+ Ajouter un élément</button>
+  </div>
+  
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a href="{{ url_for('machine_detail', machine_id=machine.id) }}" class="btn btn-secondary">Annuler</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('items-container');
+  const addButton = document.getElementById('add-item');
+  
+  addButton.addEventListener('click', function() {
+    const row = document.createElement('div');
+    row.className = 'input-group mb-2 item-row';
+    row.innerHTML = `
+      <input type="text" class="form-control" name="item_label" placeholder="Libellé de l'élément" />
+      <button type="button" class="btn btn-outline-danger remove-item">🗑️</button>
+    `;
+    container.appendChild(row);
+    
+    // Ajouter l'événement de suppression
+    row.querySelector('.remove-item').addEventListener('click', function() {
+      row.remove();
+    });
+  });
+  
+  // Ajouter les événements de suppression aux éléments existants
+  document.querySelectorAll('.remove-item').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.closest('.item-row').remove();
+    });
+  });
+});
+</script>
+{% endblock %}
+

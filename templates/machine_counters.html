@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Compteurs - {{ machine.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2>Compteurs de {{ machine.name }}</h2>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('machines') }}">Machines</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('machine_detail', machine_id=machine.id) }}">{{ machine.name }}</a></li>
+        <li class="breadcrumb-item active">Compteurs</li>
+      </ol>
+    </nav>
+  </div>
+  <a href="{{ url_for('new_counter', machine_id=machine.id) }}" class="btn btn-primary">+ Nouveau compteur</a>
+</div>
+
+{% if counters %}
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nom</th>
+            <th>Valeur</th>
+            <th>Unité</th>
+            <th>Type</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for counter in counters %}
+          <tr>
+            <td><strong>{{ counter.name }}</strong></td>
+            <td>{{ "%.1f"|format(counter.value) }}</td>
+            <td>{{ counter.unit or 'h' }}</td>
+            <td>
+              <span class="badge bg-secondary">Manuel</span>
+            </td>
+            <td>
+              <div class="btn-group">
+                <a href="{{ url_for('edit_counter', machine_id=machine.id, counter_id=counter.id) }}" class="btn btn-sm btn-outline-primary" title="Modifier">✏️</a>
+                <form method="post" action="{{ url_for('delete_counter', machine_id=machine.id, counter_id=counter.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce compteur ?');">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">🗑️</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <p class="mb-0">Aucun compteur configuré pour cette machine racine.</p>
+  <p class="mb-0 mt-2"><a href="{{ url_for('new_counter', machine_id=machine.id) }}" class="btn btn-primary btn-sm">Créer le premier compteur</a></p>
+</div>
+{% endif %}
+
+<div class="mt-3">
+  <a href="{{ url_for('machine_detail', machine_id=machine.id) }}" class="btn btn-secondary">Retour à la machine</a>
+</div>
+{% endblock %}
+

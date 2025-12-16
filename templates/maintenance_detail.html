@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ report.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-1">
+        <li class="breadcrumb-item"><a href="{{ url_for('machines') }}">Machines</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ report.name }}</li>
+      </ol>
+    </nav>
+    <h2 class="mb-0">{{ report.name }}</h2>
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-outline-success" href="{{ url_for('export_maintenance_pdf', report_id=report.id) }}" title="Exporter en PDF">📄 Export PDF</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('new_maintenance') }}">Nouveau modèle</a>
+    {% if current_user.user_type == 'admin' %}
+    <form method="post" action="{{ url_for('delete_maintenance_report', report_id=report.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce modèle de maintenance ? Cette action est irréversible.');">
+      <button type="submit" class="btn btn-outline-danger" title="Supprimer">🗑️</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<p>Périodicité : <strong>{{ report.periodicity }} heures</strong></p>
+
+<h4>Éléments</h4>
+<div class="list-group">
+  {% for component in report.components %}
+  <div class="list-group-item d-flex justify-content-between align-items-center">
+    <div>
+      <strong>{{ component.label }}</strong>
+      <div class="text-muted small">Type : {{ component.field_type }}</div>
+    </div>
+    {% if component.field_type == "number" %}
+    <span class="badge bg-primary">Nombre</span>
+    {% elif component.field_type == "checkbox" %}
+    <span class="badge bg-success">Tick box</span>
+    {% else %}
+    <span class="badge bg-secondary">Texte</span>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+

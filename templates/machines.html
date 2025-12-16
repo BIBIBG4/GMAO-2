@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Machines{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Arborescence des machines</h2>
+  <div class="btn-group">
+    {% if current_user.user_type == 'admin' %}
+    <a class="btn btn-primary" href="{{ url_for('new_machine') }}">+ Machine</a>
+    {% endif %}
+  </div>
+</div>
+{% if roots %}
+<div class="list-group">
+  {% for root in roots %}
+    {% for node, level in build_machine_tree(root) %}
+      <div class="list-group-item tree-level-{{ level }} d-flex align-items-center">
+        {% set status = machine_status.get(node.id) %}
+        {% if status == 'danger' %}
+        <span class="me-2" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #dc3545; flex-shrink: 0;"></span>
+        {% elif status == 'warning' %}
+        <span class="me-2" style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #ffc107; flex-shrink: 0;"></span>
+        {% else %}
+        <span class="me-2" style="width: 12px; flex-shrink: 0;"></span>
+        {% endif %}
+        <a href="{{ url_for('machine_detail', machine_id=node.id) }}" class="text-decoration-none flex-grow-1">
+          <span>
+            {{ node.name }} ({{ node.code }})
+            {% if node.is_root() and node.counters %}
+              {% for counter in node.counters %}
+              <span class="badge bg-info ms-2">{{ counter.name }}: {{ "%.1f"|format(counter.value) }} {{ counter.unit or 'h' }}</span>
+              {% endfor %}
+            {% elif node.hour_counter_enabled %}
+            <span class="badge bg-info ms-2">{{ "%.1f"|format(node.hours) }} {{ node.counter_unit or 'h' }}</span>
+            {% endif %}
+          </span>
+        </a>
+        <div class="btn-group ms-2">
+          {% if level == 0 and current_user.user_type in ['admin', 'technicien'] and has_counter_in_tree(node) %}
+          <a href="{{ url_for('counter_report', machine_id=node.id) }}" class="btn btn-sm btn-outline-secondary" title="Relevé compteur">📊</a>
+          {% endif %}
+          {% if current_user.user_type == 'admin' %}
+          <a href="{{ url_for('edit_machine', machine_id=node.id) }}" class="btn btn-sm btn-outline-primary" title="Modifier">✏️</a>
+          <form method="post" action="{{ url_for('delete_machine', machine_id=node.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette machine ? Cette action est irréversible.');">
+            <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">🗑️</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+    {% if not loop.last %}
+    <div class="mb-3"></div>
+    {% endif %}
+  {% endfor %}
+</div>
+{% else %}
+<p>Aucune machine créée.</p>
+{% endif %}
+{% endblock %}
+

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Historique compteurs{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2>Historique des relevés compteur</h2>
+    <p class="text-muted mb-0">Derniers relevés enregistrés</p>
+  </div>
+  <div class="btn-group">
+    <a href="{{ url_for('export_counter_logs') }}" class="btn btn-success" title="Exporter en Excel">📊 Export Excel</a>
+    <a class="btn btn-primary" href="{{ url_for('counter_report') }}">Nouveau relevé</a>
+  </div>
+</div>
+
+{% if logs %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Machine</th>
+        <th>Code</th>
+        <th>Compteur</th>
+        <th>Ancien compteur</th>
+        <th>Nouveau compteur</th>
+        <th>Différence</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      {% if log.counter %}
+        {% set counter_name = log.counter.name %}
+        {% set unit = log.counter.unit or 'h' %}
+      {% else %}
+        {% set counter_name = "Compteur machine" %}
+        {% set unit = log.machine.counter_unit or 'h' %}
+      {% endif %}
+      <tr>
+        <td>{{ log.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+        <td>{{ log.machine.name }}</td>
+        <td>{{ log.machine.code }}</td>
+        <td>{{ counter_name }}</td>
+        <td>{{ "%.1f"|format(log.previous_hours) }} {{ unit }}</td>
+        <td>{{ "%.1f"|format(log.new_hours) }} {{ unit }}</td>
+        <td>{{ "%.1f"|format(log.new_hours - log.previous_hours) }} {{ unit }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>Aucun relevé enregistré pour le moment.</p>
+{% endif %}
+{% endblock %}
+

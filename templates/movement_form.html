@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Modifier{% else %}Nouveau{% endif %} mouvement{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('movements') }}">Mouvements</a></li>
+    {% if is_edit %}
+    <li class="breadcrumb-item active" aria-current="page">Modifier</li>
+    {% else %}
+    <li class="breadcrumb-item active" aria-current="page">Nouveau</li>
+    {% endif %}
+  </ol>
+</nav>
+
+<h2>{% if is_edit %}Modifier le mouvement{% else %}Nouveau mouvement{% endif %}</h2>
+
+<form method="post" id="movementForm">
+  <div class="mb-3">
+    <label class="form-label">Type</label>
+    <select class="form-select" name="type" id="movementType" required>
+      <option value="entree" {% if is_edit and movement.type == 'entree' %}selected{% endif %}>Entrée</option>
+      <option value="sortie" {% if is_edit and movement.type == 'sortie' %}selected{% endif %}>Sortie</option>
+      <option value="transfert" {% if is_edit and movement.type == 'transfert' %}selected{% endif %}>Transfert</option>
+    </select>
+  </div>
+  <div class="row g-3">
+    <div class="col">
+      <label class="form-label">Stock source</label>
+      <select class="form-select" name="source_stock_id" id="sourceStock">
+        <option value="">--</option>
+        {% for stock in stocks %}
+        <option value="{{ stock.id }}" {% if is_edit and movement.source_stock_id == stock.id %}selected{% endif %}>
+          {{ stock.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col">
+      <label class="form-label">Stock destination</label>
+      <select class="form-select" name="dest_stock_id" id="destStock">
+        <option value="">--</option>
+        {% for stock in stocks %}
+        <option value="{{ stock.id }}" {% if is_edit and movement.dest_stock_id == stock.id %}selected{% endif %}>
+          {{ stock.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="mb-3 mt-3">
+    <label class="form-label">Date / heure</label>
+    <input class="form-control" type="datetime-local" name="created_at" id="movementDate" 
+           {% if is_edit and movement.created_at %}
+           value="{{ movement.created_at.strftime('%Y-%m-%dT%H:%M') }}"
+           {% endif %} />
+  </div>
+  <hr />
+  <h4>Produits</h4>
+  <input
+    class="form-control mb-2"
+    type="text"
+    placeholder="Recherche par nom ou code"
+    id="productSearch"
+  />
+  <div id="productRows">
+    {% if is_edit and existing_items %}
+      {% for product_id, quantity in existing_items %}
+      <div class="row g-2 mb-2 product-row">
+        <div class="col-8">
+          <select class="form-select" name="product_id">
+            <option value="">Produit...</option>
+            {% for product in products %}
+            <option
+              value="{{ product.id }}"
+              data-search="{{ (product.name ~ ' ' ~ product.code)|lower }}"
+              {% if product.id == product_id %}selected{% endif %}
+            >
+              {{ product.name }} ({{ product.code }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-4">
+          <input class="form-control" name="quantity" type="number" step="1" min="1" placeholder="Qté" 
+                 value="{{ quantity }}" />
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="row g-2 mb-2 product-row">
+      <div class="col-8">
+        <select class="form-select" name="product_id">
+          <option value="">Produit...</option>
+          {% for product in products %}
+          <option
+            value="{{ product.id }}"
+            data-search="{{ (product.name ~ ' ' ~ product.code)|lower }}"
+          >
+            {{ product.name }} ({{ product.code }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-4">
+        <input class="form-control" name="quantity" type="number" step="1" min="1" placeholder="Qté" />
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  <button class="btn btn-outline-secondary btn-sm" type="button" id="addRow">+ Produit</button>
+  <div class="mt-3">
+    <button class="btn btn-success">{% if is_edit %}Modifier{% else %}Valider{% endif %}</button>
+    <a href="{{ url_for('movements') }}" class="btn btn-secondary">Annuler</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+  const typeSelect = document.getElementById("movementType");
+  const sourceSelect = document.getElementById("sourceStock");
+  const destSelect = document.getElementById("destStock");
+  const bloc = document.getElementById("productRows");
+  const addRowBtn = document.getElementById("addRow");
+  const dateInput = document.getElementById("movementDate");
+  const form = document.getElementById("movementForm");
+  const searchInput = document.getElementById("productSearch");
+
+  function syncStockSelectors() {
+    const type = typeSelect.value;
+    sourceSelect.closest(".col").classList.toggle("d-none", type === "entree");
+    destSelect.closest(".col").classList.toggle("d-none", type === "sortie");
+  }
+
+  typeSelect.addEventListener("change", syncStockSelectors);
+  syncStockSelectors();
+
+  addRowBtn.addEventListener("click", () => {
+    const row = bloc.querySelector(".product-row").cloneNode(true);
+    row.querySelectorAll("select, input").forEach((el) => {
+      el.value = "";
+    });
+    bloc.appendChild(row);
+  });
+
+  function filterOptions(query) {
+    const selects = bloc.querySelectorAll("select");
+    selects.forEach((select) => {
+      select.querySelectorAll("option").forEach((option) => {
+        if (!option.value) return;
+        const textData = option.dataset.search || option.textContent.toLowerCase();
+        option.hidden = query && !textData.includes(query);
+      });
+    });
+  }
+
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.trim().toLowerCase();
+    filterOptions(query);
+  });
+
+  function setNow() {
+    if (!dateInput.value) {
+      const now = new Date();
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+      dateInput.value = localISOTime;
+    }
+  }
+
+  setNow();
+  form.addEventListener("submit", () => {
+    if (!dateInput.value) {
+      setNow();
+    }
+  });
+</script>
+{% endblock %}
+
+
+
+
+
+
+
+
+

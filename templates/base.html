@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}GMAO{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        padding-top: 4rem;
+      }
+      nav a.active {
+        font-weight: bold;
+      }
+      .tree-level-0 {
+        font-weight: bold;
+      }
+      .tree-level-1 {
+        margin-left: 1rem;
+      }
+      .tree-level-2 {
+        margin-left: 2rem;
+      }
+      .tree-level-3 {
+        margin-left: 3rem;
+      }
+      .tree-level-4 {
+        margin-left: 4rem;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{{ url_for('index') }}">GMAO</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          {% if current_user.is_authenticated %}
+          <ul class="navbar-nav me-auto">
+            <!-- Famille 2 : Machines, Maintenances et Relevé compteurs -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Machines & Maintenance
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                <li><a class="dropdown-item" href="{{ url_for('machines') }}">Machines</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('maintenances_list') }}">Maintenances</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('maintenance_manage') }}">Gestion maintenance</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('checklists_manage') }}">Check lists</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('counter_logs') }}">Relevé compteurs</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('scan_qrcode') }}">📷 Lecture QR code</a></li>
+              </ul>
+            </li>
+            <!-- Famille 3 : Produits, Mouvements et Stocks -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Stocks & Produits
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                <li><a class="dropdown-item" href="{{ url_for('products') }}">Produits</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('movements') }}">Mouvements</a></li>
+                {% if current_user.user_type in ['admin', 'gestionnaire'] %}
+                <li><a class="dropdown-item" href="{{ url_for('stocks') }}">Stocks</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('inventories_list') }}">Inventaires</a></li>
+                {% endif %}
+              </ul>
+            </li>
+            {% if current_user.user_type == 'admin' %}
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownParams" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Paramètre
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdownParams">
+                <li><a class="dropdown-item" href="{{ url_for('users') }}">Utilisateurs</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('database_export') }}">Base de données</a></li>
+              </ul>
+            </li>
+            {% endif %}
+          </ul>
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <span class="nav-link me-3" style="cursor: default;">{{ current_user.username }} ({{ current_user.user_type }})</span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('logout') }}" title="Déconnexion">🚪</a>
+            </li>
+          </ul>
+          {% else %}
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('login') }}">Connexion</a>
+            </li>
+          </ul>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+      <div class="mt-4">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>
+

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Accueil{% endblock %}
+{% block content %}
+<div class="py-5 text-center">
+  <h1>GMAO</h1>
+  <p class="lead">Créez vos machines, stocks, produits et mouvements.</p>
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Machines</h5>
+          <a class="btn btn-primary" href="{{ url_for('machines') }}">Voir</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Stocks & produits</h5>
+          <a class="btn btn-primary" href="{{ url_for('stocks') }}">Voir</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-5" />
+
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>Maintenances préventives</h3>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('maintenance_manage') }}">Voir la gestion complète</a>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card border-danger">
+          <div class="card-body">
+            <h5 class="card-title text-danger">Périodicité dépassée</h5>
+            <p class="card-text display-4">{{ overdue_count }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card border-warning">
+          <div class="card-body">
+            <h5 class="card-title text-warning">Proches de l'échéance</h5>
+            <p class="card-text display-4">{{ warning_count }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-5" />
+
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3>Stocks</h3>
+      <a class="btn btn-outline-primary btn-sm" href="{{ url_for('products') }}">Voir les produits</a>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card border-info">
+          <div class="card-body">
+            <h5 class="card-title text-info">Produits sous stock minimum</h5>
+            <p class="card-text display-4">{{ low_stock_count }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="my-5" />
+
+  <div class="mb-4">
+    <h3 class="mb-3">Statistiques</h3>
+    <div class="row">
+      <div class="col-md-3">
+        <div class="card border-primary">
+          <div class="card-body">
+            <h5 class="card-title text-primary">Total maintenances</h5>
+            <p class="card-text display-5">{{ total_maintenances }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-success">
+          <div class="card-body">
+            <h5 class="card-title text-success">Relevés du jour</h5>
+            <p class="card-text display-5">{{ counter_logs_today }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-warning">
+          <div class="card-body">
+            <h5 class="card-title text-warning">Mouvements du jour</h5>
+            <p class="card-text display-5">{{ movements_today }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-secondary">
+          <div class="card-body">
+            <h5 class="card-title text-secondary">Mouvements (7 jours)</h5>
+            <p class="card-text display-5">{{ movements_week }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Inventaire - {{ inventory.stock.name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('stocks') }}">Stocks</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('inventories_list') }}">Inventaires</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Détails</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2>Inventaire - {{ inventory.stock.name }} ({{ inventory.stock.code }})</h2>
+    <p class="text-muted mb-0">
+      Date : {{ inventory.created_at.strftime("%d/%m/%Y %H:%M") }} · 
+      Utilisateur : {{ inventory.user.username }}
+    </p>
+  </div>
+  <div class="btn-group">
+    <a href="{{ url_for('export_inventories') }}" class="btn btn-success" title="Exporter en Excel">📊 Export Excel</a>
+    {% if current_user.user_type == 'admin' %}
+    <a href="{{ url_for('edit_inventory', inventory_id=inventory.id) }}" class="btn btn-outline-secondary" title="Modifier">✏️ Modifier</a>
+    <form method="post" action="{{ url_for('delete_inventory', inventory_id=inventory.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet inventaire ? Cette action restaurera les quantités précédentes et est irréversible.');">
+      <button type="submit" class="btn btn-outline-danger" title="Supprimer">🗑️ Supprimer</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if inventory.items %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Produit</th>
+        <th>Code</th>
+        <th>Quantité précédente</th>
+        <th>Nouvelle quantité</th>
+        <th>Différence</th>
+        <th>Commentaire</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in inventory.items %}
+      <tr>
+        <td>{{ item.product.name }}</td>
+        <td>{{ item.product.code }}</td>
+        <td>
+          <span class="badge bg-secondary">{{ "%.2f"|format(item.previous_quantity) }}</span>
+        </td>
+        <td>
+          <span class="badge {% if item.new_quantity > item.previous_quantity %}bg-success{% elif item.new_quantity < item.previous_quantity %}bg-danger{% else %}bg-info{% endif %}">
+            {{ "%.2f"|format(item.new_quantity) }}
+          </span>
+        </td>
+        <td>
+          {% set diff = item.new_quantity - item.previous_quantity %}
+          <span class="badge {% if diff > 0 %}bg-success{% elif diff < 0 %}bg-danger{% else %}bg-secondary{% endif %}">
+            {% if diff > 0 %}+{% endif %}{{ "%.2f"|format(diff) }}
+          </span>
+        </td>
+        <td>{{ item.comment or "-" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-muted">Aucune modification enregistrée pour cet inventaire.</p>
+{% endif %}
+
+<div class="mt-3">
+  <a href="{{ url_for('inventories_list') }}" class="btn btn-secondary">Retour à la liste</a>
+</div>
+{% endblock %}
+
+
+
+

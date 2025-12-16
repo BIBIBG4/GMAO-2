@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Maintenances corrective - {{ maintenance.machine.name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('machines') }}">Machines</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('machine_detail', machine_id=maintenance.machine.id) }}">{{ maintenance.machine.name }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Maintenances corrective</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2>Maintenances corrective</h2>
+    <p class="text-muted mb-0">
+      Machine : <a href="{{ url_for('machine_detail', machine_id=maintenance.machine.id) }}">{{ maintenance.machine.name }} ({{ maintenance.machine.code }})</a>
+    </p>
+  </div>
+  {% if current_user.user_type == 'admin' or (current_user.user_type == 'technicien' and maintenance.user_id == current_user.id) %}
+  <a class="btn btn-outline-primary" href="{{ url_for('edit_corrective_maintenance', maintenance_id=maintenance.id) }}" title="Modifier le rapport">✏️</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h5 class="card-title mb-3">Informations</h5>
+    <div class="row g-3">
+      <div class="col-md-4 col-lg-3">
+        <strong>Date et heure :</strong><br>
+        <span class="text-muted">{{ maintenance.created_at.strftime("%d/%m/%Y %H:%M") }}</span>
+      </div>
+      {% if maintenance.hours %}
+      <div class="col-md-4 col-lg-3">
+        <strong>Nombre d'heures :</strong><br>
+        <span class="text-muted">{{ "%.1f"|format(maintenance.hours) }} h</span>
+      </div>
+      {% endif %}
+      {% if maintenance.stock %}
+      <div class="col-md-4 col-lg-3">
+        <strong>Stock :</strong><br>
+        <span class="text-muted">{{ maintenance.stock.name }} ({{ maintenance.stock.code }})</span>
+      </div>
+      {% endif %}
+      {% if maintenance.comment %}
+      <div class="col-md-12 col-lg-6">
+        <strong>Commentaire :</strong><br>
+        <span class="text-muted">{{ maintenance.comment }}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if maintenance.products %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">
+      <span>Produits utilisés</span>
+    </h5>
+    <div class="table-responsive">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Produit</th>
+            <th>Code</th>
+            <th>Quantité</th>
+            <th class="text-end">Prix unitaire</th>
+            <th class="text-end">Prix total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set ns = namespace(total_price=0.0) %}
+          {% for product_item in maintenance.products %}
+          {% set line_total = product_item.product.price * product_item.quantity %}
+          {% set ns.total_price = ns.total_price + line_total %}
+          <tr>
+            <td>{{ product_item.product.name }}</td>
+            <td>{{ product_item.product.code }}</td>
+            <td>{{ product_item.quantity }}</td>
+            <td class="text-end">{{ "%.2f"|format(product_item.product.price) }} €</td>
+            <td class="text-end fw-bold">{{ "%.2f"|format(line_total) }} €</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="4" class="text-end">Total :</th>
+            <th class="text-end">{{ "%.2f"|format(ns.total_price) }} €</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if photos %}
+<div class="card mt-3">
+  <div class="card-body">
+    <h5 class="card-title">Photos</h5>
+    <div class="row g-3">
+      {% for photo in photos %}
+      <div class="col-md-4 col-lg-3">
+        <div class="card">
+          <a href="{{ url_for('view_maintenance_photo', photo_id=photo.id) }}" target="_blank">
+            <img src="{{ url_for('view_maintenance_photo', photo_id=photo.id) }}" 
+                 class="card-img-top" 
+                 alt="{{ photo.original_filename }}"
+                 style="height: 200px; object-fit: cover; cursor: pointer;" />
+          </a>
+          <div class="card-body p-2">
+            <small class="text-muted d-block">{{ photo.original_filename }}</small>
+            <small class="text-muted d-block">{{ photo.uploaded_at.strftime("%d/%m/%Y %H:%M") }}</small>
+            {% if current_user.user_type == 'admin' or (current_user.user_type == 'technicien' and photo.user_id == current_user.id) %}
+            <form method="post" action="{{ url_for('delete_maintenance_photo', photo_id=photo.id) }}" 
+                  class="mt-2" 
+                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette photo ?');">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Connexion{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-4">
+    <div class="card mt-5">
+      <div class="card-body">
+        <h2 class="card-title text-center mb-4">Connexion</h2>
+        <form method="post">
+          <div class="mb-3">
+            <label class="form-label">Identifiant</label>
+            <input class="form-control" type="text" name="username" required autofocus />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mot de passe</label>
+            <input class="form-control" type="password" name="password" required />
+          </div>
+          <button class="btn btn-primary w-100" type="submit">Se connecter</button>
+        </form>
+        <div class="mt-3 text-center text-muted small">
+          <p>Compte par défaut : admin123 / 123</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+
+
+
+
+
+

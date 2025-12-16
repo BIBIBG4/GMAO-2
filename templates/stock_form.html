@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Nouveau stock{% endblock %}
+{% block content %}
+<h2>Créer un stock</h2>
+{% if not can_create %}
+<div class="alert alert-warning">
+  <strong>Limite atteinte :</strong> Le nombre maximum de stocks est limité à 10. Vous avez actuellement {{ existing_stocks_count }} stock(s).
+</div>
+{% else %}
+<p class="text-muted">Nombre de stocks actuels : {{ existing_stocks_count }}/10</p>
+<form method="post" class="mt-4">
+  <div class="mb-3">
+    <label class="form-label">Nom</label>
+    <input class="form-control" name="name" required />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Code</label>
+    <input class="form-control" name="code" required />
+  </div>
+  <button class="btn btn-success">Créer</button>
+</form>
+{% endif %}
+{% endblock %}
+

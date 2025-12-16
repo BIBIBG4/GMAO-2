@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Nouvel utilisateur{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('users') }}">Utilisateurs</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nouvel utilisateur</li>
+  </ol>
+</nav>
+
+<h2>Créer un utilisateur</h2>
+<form method="post" class="mt-4">
+  <div class="mb-3">
+    <label class="form-label">Identifiant</label>
+    <input class="form-control" type="text" name="username" required autofocus />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Mot de passe</label>
+    <input class="form-control" type="password" name="password" required />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Type</label>
+    <select class="form-select" name="user_type" required>
+      <option value="">Sélectionnez un type...</option>
+      <option value="admin">Admin</option>
+      <option value="gestionnaire">Gestionnaire</option>
+      <option value="spectateur">Spectateur</option>
+      <option value="technicien">Technicien</option>
+    </select>
+  </div>
+  <button class="btn btn-success">Créer</button>
+  <a class="btn btn-secondary" href="{{ url_for('users') }}">Annuler</a>
+</form>
+{% endblock %}
+

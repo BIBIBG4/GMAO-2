@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Liste des maintenances{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Liste des maintenances</h2>
+  <div class="btn-group">
+    <a href="{{ url_for('maintenances_list') }}" class="btn btn-outline-secondary btn-sm">Réinitialiser les filtres</a>
+    <a href="{{ url_for('export_maintenances', filter_type=filter_type, filter_name=filter_name, filter_date=filter_date, filter_machine=filter_machine, filter_user=filter_user) }}" class="btn btn-success btn-sm" title="Exporter en Excel">📊 Export Excel</a>
+  </div>
+</div>
+
+{% if maintenances %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle" style="font-size: 0.875rem;">
+    <thead class="table-light">
+      <tr>
+        <th style="width: 120px;">Type</th>
+        <th>Nom</th>
+        <th style="width: 150px;">Date</th>
+        <th>Machine / Sous-machine</th>
+        <th style="width: 150px;">Identifiant</th>
+      </tr>
+      <tr>
+        <th>
+          <select class="form-select form-select-sm" name="filter_type" id="filter_type">
+            <option value="">Tous</option>
+            <option value="préventive" {% if filter_type == 'préventive' %}selected{% endif %}>Préventive</option>
+            <option value="corrective" {% if filter_type == 'corrective' %}selected{% endif %}>Corrective</option>
+          </select>
+        </th>
+        <th>
+          <input type="text" class="form-control form-control-sm" name="filter_name" id="filter_name" 
+                 placeholder="Rechercher..." value="{{ filter_name }}">
+        </th>
+        <th>
+          <input type="date" class="form-control form-control-sm" name="filter_date" id="filter_date" 
+                 value="{{ filter_date }}">
+        </th>
+        <th>
+          <input type="text" class="form-control form-control-sm" name="filter_machine" id="filter_machine" 
+                 placeholder="Rechercher..." value="{{ filter_machine }}">
+        </th>
+        <th>
+          <input type="text" class="form-control form-control-sm" name="filter_user" id="filter_user" 
+                 placeholder="Rechercher..." value="{{ filter_user }}">
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for maintenance in maintenances %}
+      <tr>
+        <td>
+          <span class="badge bg-{{ maintenance.type_badge }}">{{ maintenance.type|title }}</span>
+        </td>
+        <td>
+          <a href="{{ maintenance.url }}" class="text-decoration-none fw-semibold">{{ maintenance.name }}</a>
+        </td>
+        <td>{{ maintenance.date.strftime("%d/%m/%Y %H:%M") }}</td>
+        <td>
+          {% set lineage = machine_lineage(maintenance.machine) %}
+          {% for node in lineage %}
+            {% if loop.last %}
+              <strong>{{ node.name }}</strong>
+              {% if node.code %}
+              <span class="text-muted">({{ node.code }})</span>
+              {% endif %}
+            {% else %}
+              <a href="{{ url_for('machine_detail', machine_id=node.id) }}" class="text-decoration-none">{{ node.name }}</a>
+              <span class="text-muted"> › </span>
+            {% endif %}
+          {% endfor %}
+        </td>
+        <td>
+          {% if maintenance.user %}
+          <span class="text-muted">{{ maintenance.user.username }}</span>
+          {% else %}
+          <span class="text-muted fst-italic">Non renseigné</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <p class="mb-0">Aucune maintenance enregistrée{% if filter_type or filter_name or filter_date or filter_machine or filter_user %} correspondant aux filtres{% endif %}.</p>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+let filterTimeout;
+function applyFilters() {
+  clearTimeout(filterTimeout);
+  filterTimeout = setTimeout(() => {
+    const params = new URLSearchParams();
+    
+    const filterType = document.getElementById('filter_type').value;
+    const filterName = document.getElementById('filter_name').value;
+    const filterDate = document.getElementById('filter_date').value;
+    const filterMachine = document.getElementById('filter_machine').value;
+    const filterUser = document.getElementById('filter_user').value;
+    
+    if (filterType) params.set('filter_type', filterType);
+    if (filterName) params.set('filter_name', filterName);
+    if (filterDate) params.set('filter_date', filterDate);
+    if (filterMachine) params.set('filter_machine', filterMachine);
+    if (filterUser) params.set('filter_user', filterUser);
+    
+    const queryString = params.toString();
+    window.location.href = '{{ url_for("maintenances_list") }}' + (queryString ? '?' + queryString : '');
+  }, 500); // Délai de 500ms pour les champs texte
+}
+
+// Pour les champs texte, utiliser un délai, pour les autres appliquer immédiatement
+document.getElementById('filter_name').addEventListener('keyup', applyFilters);
+document.getElementById('filter_machine').addEventListener('keyup', applyFilters);
+document.getElementById('filter_user').addEventListener('keyup', applyFilters);
+document.getElementById('filter_type').addEventListener('change', () => {
+  clearTimeout(filterTimeout);
+  applyFilters();
+});
+document.getElementById('filter_date').addEventListener('change', () => {
+  clearTimeout(filterTimeout);
+  applyFilters();
+});
+</script>
+{% endblock %}
+

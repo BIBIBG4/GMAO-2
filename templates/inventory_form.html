@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Modifier{% else %}Inventaire{% endif %} - {{ stock.name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('stocks') }}">Stocks</a></li>
+    {% if is_edit %}
+    <li class="breadcrumb-item"><a href="{{ url_for('inventories_list') }}">Inventaires</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('inventory_detail', inventory_id=inventory.id) }}">Détails</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Modifier</li>
+    {% else %}
+    <li class="breadcrumb-item"><a href="{{ url_for('manage_stock', stock_id=stock.id) }}">{{ stock.name }}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Inventaire</li>
+    {% endif %}
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>{% if is_edit %}Modifier l'inventaire{% else %}Inventaire{% endif %} - {{ stock.name }} ({{ stock.code }})</h2>
+</div>
+
+<form method="post" id="inventoryForm">
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Produit</th>
+          <th>Code</th>
+          <th>Quantité actuelle</th>
+          <th>Nouvelle quantité</th>
+          <th>Commentaire</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for data in products_data %}
+        <tr>
+          <td>{{ data.product.name }}</td>
+          <td>{{ data.product.code }}</td>
+          <td>
+            <span class="badge bg-secondary">{{ "%.2f"|format(data.quantity) }}</span>
+          </td>
+          <td>
+            <input 
+              type="number" 
+              class="form-control" 
+              name="new_quantity" 
+              value="{{ "%.2f"|format(data.quantity) }}" 
+              step="0.01" 
+              min="0"
+              data-product-id="{{ data.product.id }}"
+              data-current-qty="{{ data.quantity }}"
+            />
+            <input type="hidden" name="product_id" value="{{ data.product.id }}" />
+          </td>
+          <td>
+            <input 
+              type="text" 
+              class="form-control" 
+              name="comment" 
+              placeholder="Commentaire (optionnel)"
+            />
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not products_data %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">Aucun produit dans ce stock</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  
+  {% if products_data %}
+  <div class="d-flex justify-content-between mt-3">
+    {% if is_edit %}
+    <a href="{{ url_for('inventory_detail', inventory_id=inventory.id) }}" class="btn btn-secondary">Annuler</a>
+    {% else %}
+    <a href="{{ url_for('manage_stock', stock_id=stock.id) }}" class="btn btn-secondary">Annuler</a>
+    {% endif %}
+    <button type="submit" class="btn btn-primary">{% if is_edit %}Modifier{% else %}Enregistrer{% endif %} l'inventaire</button>
+  </div>
+  {% else %}
+  <div class="mt-3">
+    {% if is_edit %}
+    <a href="{{ url_for('inventory_detail', inventory_id=inventory.id) }}" class="btn btn-secondary">Retour</a>
+    {% else %}
+    <a href="{{ url_for('manage_stock', stock_id=stock.id) }}" class="btn btn-secondary">Retour</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</form>
+
+<script>
+// Désactiver les champs de quantité qui n'ont pas changé
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('inventoryForm');
+  const quantityInputs = form.querySelectorAll('input[name="new_quantity"]');
+  
+  form.addEventListener('submit', function(e) {
+    // Créer des inputs cachés pour les produits dont la quantité n'a pas changé
+    quantityInputs.forEach(function(input) {
+      const currentQty = parseFloat(input.getAttribute('data-current-qty'));
+      const newQty = parseFloat(input.value) || 0;
+      
+      if (Math.abs(newQty - currentQty) < 0.01) {
+        // La quantité n'a pas changé, on peut ignorer ce produit
+        const row = input.closest('tr');
+        const productIdInput = row.querySelector('input[name="product_id"]');
+        if (productIdInput) {
+          productIdInput.disabled = true;
+        }
+        input.disabled = true;
+        const commentInput = row.querySelector('input[name="comment"]');
+        if (commentInput) {
+          commentInput.disabled = true;
+        }
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
+
+
+
+

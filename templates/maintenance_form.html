@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Nouveau rapport{% endblock %}
+{% block content %}
+<h2>Créer un modèle de maintenances préventive</h2>
+<form method="post" class="mt-4" id="maintenanceForm">
+  <div class="mb-3">
+    <label class="form-label">Machine</label>
+    <select class="form-select" name="machine_id" id="machineSelect" required>
+      <option value="">Sélectionnez une machine...</option>
+      {% for machine in machines %}
+      <option value="{{ machine.id }}" {% if selected_machine_id == machine.id %}selected{% endif %}>
+        {{ machine.name }} ({{ machine.code }})
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="mb-3 d-none" id="counterSelectContainer">
+    <label class="form-label">Compteur de référence pour la périodicité <span class="text-danger" id="counterRequired">*</span></label>
+    <select class="form-select" name="counter_id" id="counterSelect">
+      <option value="">Sélectionnez un compteur...</option>
+    </select>
+    <small class="form-text text-muted">Choisissez le compteur auquel se réfère la périodicité de ce modèle. Vous pouvez choisir le compteur de la machine/sous-machine ou un compteur de la machine racine.</small>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Nom du rapport</label>
+    <input class="form-control" name="name" required />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Périodicité</label>
+    <input class="form-control" type="number" min="1" name="periodicity" required />
+  </div>
+  <hr />
+  <h4>Éléments du rapport</h4>
+  <div id="componentRows">
+    <div class="row g-2 mb-2 component-row">
+      <div class="col-md-7">
+        <input class="form-control" name="component_label" placeholder="Intitulé" required />
+      </div>
+      <div class="col-md-4">
+        <select class="form-select" name="component_type" required>
+          <option value="">Type...</option>
+          <option value="number">Nombre</option>
+          <option value="text">Texte</option>
+          <option value="checkbox">Tick box</option>
+        </select>
+      </div>
+      <div class="col-md-1 d-flex align-items-center">
+        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-component" title="Supprimer cet élément">
+          🗑️
+        </button>
+      </div>
+    </div>
+  </div>
+  <button class="btn btn-outline-secondary btn-sm mb-3" type="button" id="addComponent">+ Élément</button>
+  <div>
+    <button class="btn btn-success">Enregistrer</button>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+  const rows = document.getElementById("componentRows");
+  const addComponentBtn = document.getElementById("addComponent");
+
+  addComponentBtn.addEventListener("click", () => {
+    const template = rows.querySelector(".component-row");
+    const clone = template.cloneNode(true);
+    // Réinitialiser les valeurs des champs du clone
+    clone.querySelectorAll("input, select").forEach((el) => (el.value = ""));
+    rows.appendChild(clone);
+  });
+
+  // Suppression d'un élément du rapport
+  rows.addEventListener("click", (event) => {
+    const target = event.target;
+    if (target.closest(".btn-remove-component")) {
+      const row = target.closest(".component-row");
+      const allRows = rows.querySelectorAll(".component-row");
+      if (allRows.length > 1) {
+        row.remove();
+      } else {
+        // S'il ne reste qu'une ligne, on la vide simplement
+        row.querySelectorAll("input, select").forEach((el) => (el.value = ""));
+      }
+    }
+  });
+  
+  // Gestion de l'affichage du sélecteur de compteur
+  const machineSelect = document.getElementById("machineSelect");
+  const counterSelectContainer = document.getElementById("counterSelectContainer");
+  const counterSelect = document.getElementById("counterSelect");
+  
+  async function updateCounterSelect() {
+    const machineId = machineSelect.value;
+    
+    if (!machineId) {
+      counterSelectContainer.classList.add("d-none");
+      counterSelect.innerHTML = '<option value="">Sélectionnez un compteur...</option>';
+      counterSelect.removeAttribute("required");
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/machine/${machineId}/available-counters`);
+      const data = await response.json();
+      const counters = data.counters;
+      
+      if (counters && counters.length > 0) {
+        counterSelectContainer.classList.remove("d-none");
+        counterSelect.innerHTML = '<option value="">Sélectionnez un compteur...</option>';
+        
+        // Vérifier si la machine a son propre compteur
+        const hasMachineCounter = counters.some(c => c.type === "machine");
+        
+        counters.forEach(counter => {
+          const option = document.createElement("option");
+          // Si counter.id est null, on utilise une valeur spéciale pour indiquer le compteur de la machine
+          option.value = counter.id === null ? "machine" : counter.id;
+          option.textContent = counter.name + ` (${counter.value} ${counter.unit})`;
+          counterSelect.appendChild(option);
+        });
+        
+        // Si la machine n'a pas de compteur, le sélecteur de compteur est obligatoire
+        if (!hasMachineCounter) {
+          counterSelect.setAttribute("required", "required");
+          document.getElementById("counterRequired").style.display = "inline";
+        } else {
+          counterSelect.removeAttribute("required");
+          document.getElementById("counterRequired").style.display = "none";
+        }
+      } else {
+        counterSelectContainer.classList.add("d-none");
+        counterSelect.innerHTML = '<option value="">Aucun compteur disponible</option>';
+        counterSelect.removeAttribute("required");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des compteurs:", error);
+      counterSelectContainer.classList.add("d-none");
+      counterSelect.removeAttribute("required");
+    }
+  }
+  
+  machineSelect.addEventListener("change", updateCounterSelect);
+  
+  // Initialiser au chargement si une machine est déjà sélectionnée
+  if (machineSelect.value) {
+    updateCounterSelect();
+  }
+</script>
+{% endblock %}
+

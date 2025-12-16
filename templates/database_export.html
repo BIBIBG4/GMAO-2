@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Base de données{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Export de la base de données</h2>
+  <a href="{{ url_for('export_all_json') }}" class="btn btn-success">
+    📦 Télécharger toute la base (JSON)
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <p class="text-muted mb-4">Sélectionnez les données que vous souhaitez exporter au format Excel :</p>
+    
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Type de données</th>
+            <th>Description</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Maintenances</strong></td>
+            <td>Export de toutes les maintenances préventives et correctives</td>
+            <td>
+              <a href="{{ url_for('export_maintenances_excel') }}" class="btn btn-sm btn-primary">
+                📥 Télécharger Excel
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Modèles</strong></td>
+            <td>Export de tous les modèles de maintenance préventive</td>
+            <td>
+              <a href="{{ url_for('export_modeles_excel') }}" class="btn btn-sm btn-primary">
+                📥 Télécharger Excel
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Arborescence machine</strong></td>
+            <td>Export de l'arborescence complète des machines</td>
+            <td>
+              <a href="{{ url_for('export_machines_excel') }}" class="btn btn-sm btn-primary">
+                📥 Télécharger Excel
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Relevés</strong></td>
+            <td>Export de tous les relevés de compteur</td>
+            <td>
+              <a href="{{ url_for('export_releves_excel') }}" class="btn btn-sm btn-primary">
+                📥 Télécharger Excel
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Produits</strong></td>
+            <td>Export de tous les produits</td>
+            <td>
+              <a href="{{ url_for('export_produits_excel') }}" class="btn btn-sm btn-primary">
+                📥 Télécharger Excel
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Mouvements</strong></td>
+            <td>Export de tous les mouvements de stock</td>
+            <td>
+              <a href="{{ url_for('export_mouvements_excel') }}" class="btn btn-sm btn-primary">
+                📥 Télécharger Excel
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Inventaires</strong></td>
+            <td>Export de tous les inventaires effectués</td>
+            <td>
+              <a href="{{ url_for('export_inventaires_excel') }}" class="btn btn-sm btn-primary">
+                📥 Télécharger Excel
+              </a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

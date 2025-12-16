@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Stock {{ stock.name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2>{{ stock.name }} ({{ stock.code }})</h2>
+    <p class="text-muted mb-0">Produits présents: {{ stock.items|length }}</p>
+  </div>
+  <a href="{{ url_for('create_inventory', stock_id=stock.id) }}" class="btn btn-info" title="Inventaire">📋 Inventaire</a>
+</div>
+
+<h4>Produits</h4>
+{% if products_in_stock %}
+<div class="table-responsive">
+  <table class="table table-hover" style="font-size: 0.875rem;">
+    <thead class="table-light">
+    <tr>
+        <th>Nom</th>
+        <th>Code</th>
+        <th>Code emplacement</th>
+        <th>Prix</th>
+        <th>Fournisseur</th>
+        <th>Stock min.</th>
+        <th class="text-center fw-bold">Quantité</th>
+        <th class="text-center">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+      {% for item in products_in_stock %}
+      {% set product = item.product %}
+      {% set qty = item.quantity %}
+    <tr>
+        <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">{{ product.name }}</td>
+        <td style="white-space: nowrap;">{{ product.code }}</td>
+        <td style="white-space: nowrap;">{{ product.location_code or "-" }}</td>
+        <td style="white-space: nowrap;">{{ "%.2f"|format(product.price) }} €</td>
+        <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
+          {{ product.supplier_name or "-" }}
+          {% if product.supplier_reference %}
+          <br><small class="text-muted">REF: {{ product.supplier_reference }}</small>
+          {% endif %}
+        </td>
+        <td style="white-space: nowrap;">{{ product.minimum_stock|int }}</td>
+        <td class="text-center">
+          <span class="{% if product.minimum_stock > 0 and qty < product.minimum_stock %}text-danger fw-bold{% else %}fw-bold{% endif %}">
+            {{ qty|int }}
+          </span>
+        </td>
+      {% if current_user.user_type == 'admin' %}
+        <td class="text-center" style="white-space: nowrap;">
+          <form method="post" class="d-inline" onsubmit="return confirm('Supprimer le produit du stock ?');">
+            <input type="hidden" name="product_id" value="{{ product.id }}" />
+          <input type="hidden" name="action" value="delete" />
+            <button type="submit" class="btn btn-outline-danger" style="padding: 0.125rem 0.25rem; font-size: 0.75rem; line-height: 1.2;" title="Supprimer du stock">🗑️</button>
+        </form>
+      </td>
+      {% else %}
+      <td></td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="text-muted">Aucun produit dans ce stock.</p>
+{% endif %}
+{% endblock %}
+

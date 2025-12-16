@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block title %}Produits{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Produits</h2>
+  <div class="btn-group">
+    <select class="form-select form-select-sm" id="filter_stock" style="width: auto;" onchange="applyFilters()">
+      <option value="">Tous les stocks</option>
+      {% for stock in stocks %}
+      <option value="{{ stock.id }}" {% if filter_stock_id == stock.id %}selected{% endif %}>
+        {{ stock.name }}{% if main_stock_id and stock.id == main_stock_id %}*{% endif %}
+      </option>
+      {% endfor %}
+    </select>
+    <button type="button" class="btn btn-outline-warning {% if filter_low_stock %}active{% endif %}" onclick="toggleLowStockFilter()">
+      Stock < stock min
+    </button>
+    <a href="{{ url_for('products') }}" class="btn btn-outline-secondary">Réinitialiser</a>
+    <a href="{{ url_for('export_products', filter_name=filter_name, filter_code=filter_code, filter_supplier=filter_supplier, filter_min_stock=filter_min_stock, filter_low_stock=('1' if filter_low_stock else ''), filter_stock_id=(filter_stock_id if filter_stock_id else '')) }}" class="btn btn-success" title="Exporter en Excel">📊 Export Excel</a>
+    {% if current_user.user_type == 'admin' %}
+    <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#importModal" title="Importer des produits depuis Excel">
+      📥 Importer Excel
+    </button>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal" onclick="openProductModal()">
+      + Nouveau produit
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{% if products %}
+<div class="table-responsive">
+  <table class="table table-hover" style="font-size: 0.875rem;">
+    <thead class="table-light">
+      <tr>
+        <th>Nom</th>
+        <th>Code</th>
+        <th>Code emplacement</th>
+        <th>Prix</th>
+        <th>Fournisseur</th>
+        <th>Stock min.</th>
+        {% if filter_stock_id %}
+          {% for stock in stocks %}
+            {% if stock.id == filter_stock_id %}
+            <th class="text-center">
+              {{ stock.name }}{% if main_stock_id and stock.id == main_stock_id %}*{% endif %}
+            </th>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          {% for stock in stocks %}
+          <th class="text-center">
+            {{ stock.name }}{% if main_stock_id and stock.id == main_stock_id %}*{% endif %}
+          </th>
+          {% endfor %}
+        {% endif %}
+        <th class="text-center fw-bold">Total stocks</th>
+        <th class="text-center">Actions</th>
+      </tr>
+      <tr>
+        <th>
+          <input type="text" class="form-control form-control-sm" id="filter_name" 
+                 placeholder="Rechercher..." value="{{ filter_name }}" onkeyup="applyFilters()">
+        </th>
+        <th>
+          <input type="text" class="form-control form-control-sm" id="filter_code" 
+                 placeholder="Rechercher..." value="{{ filter_code }}" onkeyup="applyFilters()">
+        </th>
+        <th></th>
+        <th></th>
+        <th>
+          <input type="text" class="form-control form-control-sm" id="filter_supplier" 
+                 placeholder="Rechercher..." value="{{ filter_supplier }}" onkeyup="applyFilters()">
+        </th>
+        <th>
+          <input type="number" class="form-control form-control-sm" id="filter_min_stock" 
+                 placeholder="Min..." value="{{ filter_min_stock }}" step="0.01" onchange="applyFilters()">
+        </th>
+        {% if filter_stock_id %}
+          {% for stock in stocks %}
+            {% if stock.id == filter_stock_id %}
+            <th></th>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          {% for stock in stocks %}
+          <th></th>
+          {% endfor %}
+        {% endif %}
+        <th></th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in products %}
+      <tr>
+        <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">{{ product.name }}</td>
+        <td style="white-space: nowrap;">{{ product.code }}</td>
+        <td style="white-space: nowrap;">{{ product.location_code or "-" }}</td>
+        <td style="white-space: nowrap;">{{ "%.2f"|format(product.price) }} €</td>
+        <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
+          {{ product.supplier_name or "-" }}
+          {% if product.supplier_reference %}
+          <br><small class="text-muted">REF: {{ product.supplier_reference }}</small>
+          {% endif %}
+        </td>
+        <td style="white-space: nowrap;">{{ product.minimum_stock|int }}</td>
+        {% if filter_stock_id %}
+          {% for stock in stocks %}
+            {% if stock.id == filter_stock_id %}
+            <td class="text-center">
+              {% set qty = quantities_by_product[product.id][stock.id] %}
+              <span class="{% if product.minimum_stock > 0 and qty < product.minimum_stock %}text-danger fw-bold{% endif %}">
+                {{ qty|int }}
+              </span>
+            </td>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          {% for stock in stocks %}
+          <td class="text-center">
+            {% set qty = quantities_by_product[product.id][stock.id] %}
+            <span class="{% if product.minimum_stock > 0 and qty < product.minimum_stock %}text-danger fw-bold{% endif %}">
+              {{ qty|int }}
+            </span>
+          </td>
+          {% endfor %}
+        {% endif %}
+        <td class="text-center fw-bold">
+          {% set total = total_by_product[product.id] %}
+          <span class="{% if product.minimum_stock > 0 and total < product.minimum_stock %}text-danger{% else %}text-primary{% endif %}">
+            {{ total|int }}
+          </span>
+        </td>
+        {% if current_user.user_type == 'admin' %}
+        <td class="text-center" style="white-space: nowrap;">
+          <button type="button" class="btn btn-outline-primary" style="padding: 0.125rem 0.25rem; font-size: 0.75rem; line-height: 1.2;" onclick="openProductModal({{ product.id }}, {{ product.name|tojson }}, {{ product.code|tojson }}, {{ (product.location_code or '')|tojson }}, {{ product.price }}, {{ (product.supplier_name or '')|tojson }}, {{ (product.supplier_reference or '')|tojson }}, {{ product.minimum_stock }})" title="Modifier">
+            ✏️
+          </button>
+          <form method="post" action="{{ url_for('delete_product', product_id=product.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce produit ?');">
+            <button type="submit" class="btn btn-outline-danger" style="padding: 0.125rem 0.25rem; font-size: 0.75rem; line-height: 1.2;" title="Supprimer">🗑️</button>
+          </form>
+        </td>
+        {% else %}
+        <td></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  <p class="mb-0">Aucun produit{% if filter_name or filter_code or filter_supplier or filter_min_stock or filter_low_stock or filter_stock_id %} correspondant aux filtres{% endif %}. {% if not filter_name and not filter_code and not filter_supplier and not filter_min_stock and not filter_low_stock and not filter_stock_id %}Cliquez sur "Nouveau produit" pour en créer un.{% endif %}</p>
+</div>
+{% endif %}
+
+<!-- Modal pour créer/modifier un produit -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="productModalLabel">Nouveau produit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" id="productForm" action="{{ url_for('products') }}">
+        <div class="modal-body">
+          <input type="hidden" id="productId" name="product_id">
+          <div class="mb-3">
+            <label class="form-label">Nom <span class="text-danger">*</span></label>
+            <input class="form-control" id="productName" name="name" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Code <span class="text-danger">*</span></label>
+            <input class="form-control" id="productCode" name="code" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Code emplacement</label>
+            <input class="form-control" id="productLocationCode" name="location_code" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Prix</label>
+            <input class="form-control" id="productPrice" name="price" type="number" step="0.01" value="0" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fournisseur</label>
+            <input class="form-control" id="productSupplier" name="supplier_name" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">REF (Référence fournisseur)</label>
+            <input class="form-control" id="productSupplierRef" name="supplier_reference" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Stock minimum</label>
+            <input class="form-control" id="productMinStock" name="minimum_stock" type="number" step="0.01" value="0" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal pour importer des produits depuis Excel -->
+{% if current_user.user_type == 'admin' %}
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="importModalLabel">Importer des produits depuis Excel</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{{ url_for('import_products') }}" enctype="multipart/form-data">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="excelFile" class="form-label">Fichier Excel</label>
+            <input type="file" class="form-control" id="excelFile" name="file" accept=".xlsx,.xls" required />
+            <div class="form-text">
+              Le fichier Excel doit contenir les colonnes suivantes (dans l'ordre) :
+              <ul class="mb-0 mt-2">
+                <li><strong>Colonne 1 :</strong> Nom du produit (obligatoire)</li>
+                <li><strong>Colonne 2 :</strong> Code du produit (obligatoire, doit être unique)</li>
+                <li><strong>Colonne 3 :</strong> Prix (optionnel, défaut: 0)</li>
+                <li><strong>Colonne 4 :</strong> Fournisseur (optionnel)</li>
+                <li><strong>Colonne 5 :</strong> Stock minimum (optionnel, défaut: 0)</li>
+              </ul>
+              <p class="mt-2 mb-0"><small class="text-muted">Note : Les produits avec un code déjà existant seront ignorés.</small></p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary">Importer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+let productModal;
+let productForm;
+
+document.addEventListener('DOMContentLoaded', function() {
+  productModal = new bootstrap.Modal(document.getElementById('productModal'));
+  productForm = document.getElementById('productForm');
+});
+
+function openProductModal(productId = null, name = '', code = '', locationCode = '', price = 0, supplier = '', supplierRef = '', minStock = 0) {
+  const modal = document.getElementById('productModal');
+  const modalTitle = document.getElementById('productModalLabel');
+  const form = document.getElementById('productForm');
+  const productIdInput = document.getElementById('productId');
+  
+  // Réinitialiser le formulaire
+  form.reset();
+  form.action = "{{ url_for('products') }}";
+  form.method = "post";
+  
+  if (productId) {
+    // Mode modification
+    modalTitle.textContent = 'Modifier le produit';
+    document.getElementById('productName').value = name;
+    document.getElementById('productCode').value = code;
+    document.getElementById('productLocationCode').value = locationCode;
+    document.getElementById('productPrice').value = price;
+    document.getElementById('productSupplier').value = supplier;
+    document.getElementById('productSupplierRef').value = supplierRef;
+    document.getElementById('productMinStock').value = minStock;
+    productIdInput.value = productId;
+    
+    // Changer l'action du formulaire pour la modification
+    form.action = "{{ url_for('edit_product', product_id=0) }}".replace('0', productId);
+  } else {
+    // Mode création
+    modalTitle.textContent = 'Nouveau produit';
+    productIdInput.value = '';
+  }
+  
+  productModal.show();
+}
+
+let filterTimeout;
+let lowStockFilterActive = {% if filter_low_stock %}true{% else %}false{% endif %};
+
+function applyFilters() {
+  clearTimeout(filterTimeout);
+  filterTimeout = setTimeout(() => {
+    const params = new URLSearchParams();
+    
+    const filterName = document.getElementById('filter_name').value;
+    const filterCode = document.getElementById('filter_code').value;
+    const filterSupplier = document.getElementById('filter_supplier').value;
+    const filterMinStock = document.getElementById('filter_min_stock').value;
+    const filterStock = document.getElementById('filter_stock').value;
+    
+    if (filterName) params.set('filter_name', filterName);
+    if (filterCode) params.set('filter_code', filterCode);
+    if (filterSupplier) params.set('filter_supplier', filterSupplier);
+    if (filterMinStock) params.set('filter_min_stock', filterMinStock);
+    if (filterStock) params.set('filter_stock_id', filterStock);
+    if (lowStockFilterActive) params.set('filter_low_stock', '1');
+    
+    const queryString = params.toString();
+    window.location.href = '{{ url_for("products") }}' + (queryString ? '?' + queryString : '');
+  }, 500);
+}
+
+function toggleLowStockFilter() {
+  lowStockFilterActive = !lowStockFilterActive;
+  applyFilters();
+}
+
+// Pour les champs texte, utiliser un délai, pour les autres appliquer immédiatement
+document.getElementById('filter_name').addEventListener('keyup', applyFilters);
+document.getElementById('filter_code').addEventListener('keyup', applyFilters);
+document.getElementById('filter_supplier').addEventListener('keyup', applyFilters);
+document.getElementById('filter_min_stock').addEventListener('change', () => {
+  clearTimeout(filterTimeout);
+  applyFilters();
+});
+</script>
+{% endblock %}

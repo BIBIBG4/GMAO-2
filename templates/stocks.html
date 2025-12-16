@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Stocks{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Stocks</h2>
+  {% if current_user.user_type == 'admin' %}
+  <a class="btn btn-primary" href="{{ url_for('new_stock') }}">+ Stock</a>
+  {% endif %}
+</div>
+{% if stocks %}
+<div class="list-group">
+  {% for stock in stocks %}
+  <div class="list-group-item d-flex justify-content-between align-items-center">
+    <a href="{{ url_for('manage_stock', stock_id=stock.id) }}" class="text-decoration-none flex-grow-1">
+      <div class="d-flex justify-content-between">
+        <span>{{ stock.name }}{% if main_stock_id == stock.id %}*{% endif %} ({{ stock.code }})</span>
+        <small>{{ stock.items|length }} produits</small>
+      </div>
+    </a>
+    <div class="btn-group ms-2">
+      <a href="{{ url_for('create_inventory', stock_id=stock.id) }}" class="btn btn-sm btn-info" title="Inventaire">📋 Inventaire</a>
+      {% if current_user.user_type == 'admin' %}
+      <form method="post" action="{{ url_for('delete_stock', stock_id=stock.id) }}" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce stock ? Cette action est irréversible.');">
+        <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer le stock">🗑️</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p>Aucun stock.</p>
+{% endif %}
+{% endblock %}
+
